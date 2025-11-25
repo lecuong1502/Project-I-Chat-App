@@ -8,12 +8,14 @@ import {
 } from "react-router-dom";
 
 import Welcome from './pages/Welcome';
+import Signup from './pages/Signup';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Welcome />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </Router>
   )

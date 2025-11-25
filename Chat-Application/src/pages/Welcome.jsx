@@ -3,12 +3,15 @@ import { Eye, EyeOff, MessageCircle } from "lucide-react"
 import "./Welcome.css";
 import { useState } from "react";
 import iconLogo from "../assets/icon.png"
+import { useNavigate } from "react-router-dom"
 
 const Welcome = () => {
     const [showPassword, setShowPassword] = useState(false);
-    
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    const navigate = useNavigate();
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -36,9 +39,9 @@ const Welcome = () => {
 
                 <div className="login-container" onSubmit={handleLogin}>
                     <div className="input-group">
-                        <input 
-                            type="email" 
-                            placeholder="Email address..." 
+                        <input
+                            type="email"
+                            placeholder="Email address..."
                             className="input-field"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -47,16 +50,16 @@ const Welcome = () => {
                     </div>
 
                     <div className="input-group password-group">
-                        <input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="Password..." 
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password..."
                             className="input-field password-input"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="toggle-password-btn"
                             onClick={togglePasswordVisibility}
                             aria-label="Toggle password visibility"
@@ -73,8 +76,8 @@ const Welcome = () => {
                 <div className="divider">OR</div>
 
                 <div className="action-buttons">
-                    <button className="btn-primary">Login by Facebook</button>
-                    <button className="btn-secondary">Create an new account</button>
+                    <button className="btn-primary">Login by Google</button>
+                    <button type="button" className="btn-secondary" onClick={() => navigate("/signup")}>Create an new account</button>
                 </div>
             </div>
 
