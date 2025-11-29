@@ -22,6 +22,18 @@ const Signup = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Validate the email
+    const isValidEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const isValidPassword = (password) => {
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
+        return passwordRegex.test(password);
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -30,32 +42,68 @@ const Signup = () => {
             [name]: type === "checkbox" ? checked : value,
         }));
 
-        if (name === "password" || name === "confirmPassword") {
-            setError(""); 
-        }
+        if (error) setError("");
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setError("");
         
-        if (!formData.password || !formData.confirmPassword) {
-            setError("Please fill your password!");
+        if (!isValidEmail(formData.email)) {
+            setError("Invalid email format! (Example: user@email.com)");
+            return;
+        }
+
+        if (!isValidPassword(formData.password)) {
+            setError("Password must be 8-20 characters, include uppercase, lowercase, number and special character!");
             return;
         }
 
         if (formData.password !== formData.confirmPassword) {
-            setError("Confirm Password correctly!");
+            setError("Confirm Password does not match!");
             return;
         }
 
-        if (formData.acceptedTerms) {
-            setError("You must accept all the terms to continue!")
+        if (!formData.acceptedTerms) {
+            setError("You must accept the Terms & Conditions to continue!");
             return;
         }
 
-        setError("");
-        alert("Sign up successfully!!!");
-        navigate('/');
+        // Call API and Save the account
+        setIsLoading(true);
+        try {
+            // const response = await fetch('https://your-api-domain.com/api/register', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({
+            //         email: formData.email,
+            //         password: formData.password,
+            //         firstName: formData.firstName,
+            //         lastName: formData.lastName
+            //     })
+            // });
+
+            // if (!response.ok) throw new Error("Registration failed");
+            
+            // --- DEMO: LƯU VÀO LOCALSTORAGE ĐỂ TEST LOGIN ---
+            // (Bước này giúp bạn đăng nhập được ngay bằng tài khoản vừa tạo mà không cần backend thật)
+            const newAccount = {
+                email: formData.email,
+                password: formData.password,
+                firstName: formData.firstName
+            };
+            localStorage.setItem("registeredUser", JSON.stringify(newAccount));
+
+            setTimeout(() => {
+                alert("Sign up successfully! Please login.");
+                setIsLoading(false);
+                navigate('/');
+            }, 1000);
+        } catch (err) {
+            setIsLoading(false);
+            setError("An error occurred during registration. Please try again.");
+            console.error(err);
+        }
     };
 
     return (
@@ -181,10 +229,10 @@ const Signup = () => {
 
                         <button 
                             type="submit" 
-                            className={`submit-btn pill-btn ${!formData.acceptedTerms ? "disabled-btn" : ""}`}
-                            disabled={!formData.acceptedTerms}
+                            className={`submit-btn pill-btn ${isLoading ? "disabled-btn" : ""}`}
+                            disabled={isLoading}
                         >
-                            Create Account
+                            {isLoading ? "Processing..." : "Create Account"}
                         </button>
                     </form>
 

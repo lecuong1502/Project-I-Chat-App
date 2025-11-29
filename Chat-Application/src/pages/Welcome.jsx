@@ -19,6 +19,27 @@ const Welcome = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
+
+        const storedUser = JSON.parse(localStorage.getItem("registeredUser"));
+
+        const isMockAdmin = email === "admin@gmail.com" && password === "123456";
+        const isRegisteredUser = storedUser && email === storedUser.email && password === storedUser.password;
+
+
+        if (!email || !password) {
+            alert("Please fill all fields!");
+            return;
+        }
+
+        if (isMockAdmin || isRegisteredUser) {
+        // Lưu cờ đánh dấu đã đăng nhập
+            localStorage.setItem("isLoggedIn", "true"); 
+        
+            alert("Login successful!");
+            navigate("/main-board");
+        } else {
+            alert("Incorrect email or password!");
+        }
     };
 
     return (
@@ -37,7 +58,7 @@ const Welcome = () => {
                     Connect easily with friends, families and people who have same hobbies as you.
                 </p>
 
-                <div className="login-container" onSubmit={handleLogin}>
+                <form className="login-container" onSubmit={handleLogin}>
                     <div className="input-group">
                         <input
                             type="email"
@@ -71,7 +92,7 @@ const Welcome = () => {
                     <button type="submit" className="btn-primary btn-login">
                         Log In
                     </button>
-                </div>
+                </form>
 
                 <div className="divider">OR</div>
 

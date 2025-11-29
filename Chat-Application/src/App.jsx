@@ -9,6 +9,8 @@ import {
 
 import Welcome from './pages/Welcome';
 import Signup from './pages/Signup';
+import MainBoard from './pages/Mainboard'
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -16,6 +18,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/main-board"
+          element={
+            <ProtectedRoute>
+              <MainBoard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   )
