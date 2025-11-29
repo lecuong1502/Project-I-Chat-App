@@ -38,7 +38,6 @@ const Mainboard = () => {
 
     return (
         <div className="main-board-container">
-            {/* --- LEFT SIDEBAR --- */}
             <div className="sidebar">
                 <div className="sidebar-header">
                     <h2>Z-Chat</h2>
