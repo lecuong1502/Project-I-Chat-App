@@ -45,10 +45,10 @@ const Signup = () => {
         if (error) setError("");
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        
+
         if (!isValidEmail(formData.email)) {
             setError("Invalid email format! (Example: user@email.com)");
             return;
@@ -72,184 +72,183 @@ const Signup = () => {
         // Call API and Save the account
         setIsLoading(true);
         try {
-            // const response = await fetch('https://your-api-domain.com/api/register', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({
-            //         email: formData.email,
-            //         password: formData.password,
-            //         firstName: formData.firstName,
-            //         lastName: formData.lastName
-            //     })
-            // });
-
-            // if (!response.ok) throw new Error("Registration failed");
-            
-            // --- DEMO: LƯU VÀO LOCALSTORAGE ĐỂ TEST LOGIN ---
-            // (Bước này giúp bạn đăng nhập được ngay bằng tài khoản vừa tạo mà không cần backend thật)
-            const newAccount = {
+            const response = await fetch('http://localhost:3001/api/register', { 
+            method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
                 email: formData.email,
                 password: formData.password,
-                firstName: formData.firstName
-            };
-            localStorage.setItem("registeredUser", JSON.stringify(newAccount));
+                birthday: formData.birthday,
+                phone: formData.phone,
+                address: formData.address
+            })
+        });
 
-            setTimeout(() => {
-                alert("Sign up successfully! Please login.");
-                setIsLoading(false);
-                navigate('/');
-            }, 1000);
-        } catch (err) {
+        const newAccount = {
+            email: formData.email,
+            password: formData.password,
+            firstName: formData.firstName
+        };
+        localStorage.setItem("registeredUser", JSON.stringify(newAccount));
+
+        setTimeout(() => {
+            alert("Sign up successfully! Please login.");
             setIsLoading(false);
-            setError("An error occurred during registration. Please try again.");
-            console.error(err);
-        }
-    };
+            navigate('/');
+        }, 1000);
+    } catch (err) {
+        setIsLoading(false);
+        setError("An error occurred during registration. Please try again.");
+        console.error(err);
+    }
+};
 
-    return (
-        <div className="signup-container">
-            <div className="signup-left">
-                <div className="image-placeholder">
-                    <h1>Image Area</h1>
-                </div>
+return (
+    <div className="signup-container">
+        <div className="signup-left">
+            <div className="image-placeholder">
+                <h1>Image Area</h1>
             </div>
+        </div>
 
-            <div className="signup-right">
-                <div className="form-wrapper">
-                    <div className="form-header">
-                        <div className="logo-circle">
-                            <img src={iconLogo} alt="Logo" id="logo"/>
-                        </div>
-                        <h1>A Wonderful Place</h1>
-                        <h2 className="gradient-text">Brings The World To You</h2>
-                        <p className="sub-text">Join us and connect with friends today.</p>
+        <div className="signup-right">
+            <div className="form-wrapper">
+                <div className="form-header">
+                    <div className="logo-circle">
+                        <img src={iconLogo} alt="Logo" id="logo" />
                     </div>
+                    <h1>A Wonderful Place</h1>
+                    <h2 className="gradient-text">Brings The World To You</h2>
+                    <p className="sub-text">Join us and connect with friends today.</p>
+                </div>
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="input-group-row">
-                            <input
-                                className="custom-input"
-                                type="text"
-                                name="firstName"
-                                placeholder="First Name"
-                                onChange={handleChange}
-                                required
-                            />
-                            <input
-                                className="custom-input"
-                                type="text"
-                                name="lastName"
-                                placeholder="Last Name"
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-
+                <form onSubmit={handleSubmit}>
+                    <div className="input-group-row">
                         <input
-                            className="custom-input full-width"
-                            type="email"
-                            name="email"
-                            placeholder="Email address..."
+                            className="custom-input"
+                            type="text"
+                            name="firstName"
+                            placeholder="First Name"
                             onChange={handleChange}
                             required
                         />
+                        <input
+                            className="custom-input"
+                            type="text"
+                            name="lastName"
+                            placeholder="Last Name"
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
-                        <div className="password-wrapper">
-                            <input
-                                className="custom-input full-width"
-                                type={showPassword ? "text" : "password"}
-                                name="password"
-                                placeholder="Password..."
-                                onChange={handleChange}
-                                required
-                            />
-                            <span
-                                className="toggle-icon"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                            </span>
-                        </div>
+                    <input
+                        className="custom-input full-width"
+                        type="email"
+                        name="email"
+                        placeholder="Email address..."
+                        onChange={handleChange}
+                        required
+                    />
 
-                        <div className="password-wrapper">
-                            <input
-                                className={`custom-input full-width ${error ? "input-error" : ""}`}
-                                type={showConfirmPassword ? "text" : "password"}
-                                name="confirmPassword"
-                                placeholder="Confirm Password..."
-                                onChange={handleChange}
-                                required
-                            />
-                            <span
-                                className="toggle-icon"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                            </span>
-                        </div>
-
-                        {error && <p className="error-text">{error}</p>}
-
-                        <div className="input-group-row">
-                            <input
-                                className="custom-input"
-                                type="text"
-                                onFocus={(e) => (e.target.type = "date")}
-                                onBlur={(e) => (e.target.type = "text")}
-                                name="birthday"
-                                placeholder="Birthday"
-                                onChange={handleChange}
-                            />
-                            <input
-                                className="custom-input"
-                                type="tel"
-                                name="phone"
-                                placeholder="Phone Number"
-                                onChange={handleChange}
-                            />
-                        </div>
-
+                    <div className="password-wrapper">
                         <input
                             className="custom-input full-width"
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="Password..."
+                            onChange={handleChange}
+                            required
+                        />
+                        <span
+                            className="toggle-icon"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </span>
+                    </div>
+
+                    <div className="password-wrapper">
+                        <input
+                            className={`custom-input full-width ${error ? "input-error" : ""}`}
+                            type={showConfirmPassword ? "text" : "password"}
+                            name="confirmPassword"
+                            placeholder="Confirm Password..."
+                            onChange={handleChange}
+                            required
+                        />
+                        <span
+                            className="toggle-icon"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </span>
+                    </div>
+
+                    {error && <p className="error-text">{error}</p>}
+
+                    <div className="input-group-row">
+                        <input
+                            className="custom-input"
                             type="text"
-                            name="address"
-                            placeholder="Address"
+                            onFocus={(e) => (e.target.type = "date")}
+                            onBlur={(e) => (e.target.type = "text")}
+                            name="birthday"
+                            placeholder="Birthday"
                             onChange={handleChange}
                         />
-
-                        <div className="terms-box">
-                            <input
-                                type="checkbox"
-                                id="terms"
-                                name="acceptedTerms"
-                                onChange={handleChange}
-                            />
-                            <label htmlFor="terms">I accept the Terms & Conditions</label>
-                        </div>
-
-                        <button 
-                            type="submit" 
-                            className={`submit-btn pill-btn ${isLoading ? "disabled-btn" : ""}`}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? "Processing..." : "Create Account"}
-                        </button>
-                    </form>
-
-                    <div className="divider">
-                        <span>OR</span>
+                        <input
+                            className="custom-input"
+                            type="tel"
+                            name="phone"
+                            placeholder="Phone Number"
+                            onChange={handleChange}
+                        />
                     </div>
 
-                    <div className="footer-action">
-                        <p>Already have an account?</p>
-                        <button className="login-again-btn" onClick={() => navigate("/")}>
-                            Log In
-                        </button>
+                    <input
+                        className="custom-input full-width"
+                        type="text"
+                        name="address"
+                        placeholder="Address"
+                        onChange={handleChange}
+                    />
+
+                    <div className="terms-box">
+                        <input
+                            type="checkbox"
+                            id="terms"
+                            name="acceptedTerms"
+                            onChange={handleChange}
+                        />
+                        <label htmlFor="terms">I accept the Terms & Conditions</label>
                     </div>
+
+                    <button
+                        type="submit"
+                        className={`submit-btn pill-btn ${isLoading ? "disabled-btn" : ""}`}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "Processing..." : "Create Account"}
+                    </button>
+                </form>
+
+                <div className="divider">
+                    <span>OR</span>
+                </div>
+
+                <div className="footer-action">
+                    <p>Already have an account?</p>
+                    <button className="login-again-btn" onClick={() => navigate("/")}>
+                        Log In
+                    </button>
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 };
 
 export default Signup;
