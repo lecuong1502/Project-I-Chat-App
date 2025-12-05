@@ -73,7 +73,7 @@ app.post('/api/login', async (req, res) => {
         await user.save();
 
         const { password: _, ...userData } = user._doc;
-        res.status(200).json(user);
+        res.status(200).json(userData);
     } catch (err) {
         res.status(500).json(err);
     }
@@ -132,6 +132,6 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log('Server running on port 3000');
+server.listen(3001, () => {
+    console.log('Server running on port 3001');
 });

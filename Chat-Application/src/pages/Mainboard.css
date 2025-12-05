@@ -7,6 +7,7 @@
     overflow: hidden;
 }
 
+/* --- SIDEBAR --- */
 .sidebar {
     width: 350px;
     background: white;
@@ -23,11 +24,30 @@
 }
 
 .sidebar-header h2 {
-    background: linear-gradient(90deg, #5b86e5, #36d1dc, #ff6b6b);
-    background: var(--messenger-gradient);
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    /* Gradient Text */
+    background: linear-gradient(83.84deg, #0088FF -6.87%, #A033FF 26.54%, #FF5C87 58.58%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.logout-btn {
+    padding: 6px 12px;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #cc0000;
 }
 
 .search-bar {
@@ -46,6 +66,7 @@
     outline: none;
     margin-left: 10px;
     width: 100%;
+    font-size: 14px;
 }
 
 .user-list {
@@ -53,17 +74,19 @@
     overflow-y: auto;
 }
 
+/* User Item Styling */
 .user-item {
     display: flex;
     align-items: center;
     padding: 10px 15px;
     cursor: pointer;
     transition: background 0.2s;
+    position: relative;
 }
 
 .user-item:hover,
 .user-item.active {
-    background-color: #f0f2f5;
+    background-color: #eaf3ff; /* Màu nền nhẹ khi hover/active */
 }
 
 .avatar {
@@ -72,18 +95,24 @@
     border-radius: 50%;
     object-fit: cover;
     margin-right: 15px;
+    border: 1px solid #eee;
+}
+
+.user-info {
+    flex: 1;
 }
 
 .user-info h4 {
     margin: 0;
     font-size: 15px;
-    color: black;
+    font-weight: 600;
+    color: #050505;
 }
 
 .user-info p {
     margin: 0;
     font-size: 13px;
-    color: black;
+    color: #65676b;
     margin-top: 4px;
 }
 
@@ -96,13 +125,14 @@
 }
 
 .chat-header {
-    padding: 15px 20px;
+    padding: 10px 20px;
     border-bottom: 1px solid #ddd;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     z-index: 10;
+    height: 60px;
 }
 
 .chat-header-user {
@@ -115,8 +145,14 @@
     color: #0084ff;
     cursor: pointer;
     font-size: 20px;
+    transition: 0.2s;
 }
 
+.chat-actions svg:hover {
+    color: #006ec9;
+}
+
+/* Chat Body */
 .chat-body {
     flex: 1;
     padding: 20px;
@@ -134,18 +170,21 @@
     font-size: 14px;
     line-height: 1.4;
     position: relative;
+    word-wrap: break-word;
 }
 
 .message.received {
     align-self: flex-start;
     background-color: #e4e6eb;
     color: #050505;
+    border-bottom-left-radius: 4px;
 }
 
 .message.sent {
     align-self: flex-end;
     background-color: #0084ff;
     color: white;
+    border-bottom-right-radius: 4px;
 }
 
 .message-img {
@@ -154,6 +193,7 @@
     margin-top: 5px;
 }
 
+/* Chat Footer */
 .chat-footer {
     padding: 15px;
     display: flex;
@@ -169,6 +209,7 @@
     padding: 10px 15px;
     margin: 0 10px;
     outline: none;
+    font-size: 14px;
 }
 
 /* --- INFO PANEL --- */
@@ -186,6 +227,7 @@
 .profile-section {
     text-align: center;
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .big-avatar {
@@ -193,6 +235,7 @@
     height: 80px;
     border-radius: 50%;
     margin-bottom: 10px;
+    object-fit: cover;
 }
 
 .options-list {
@@ -208,6 +251,7 @@
     cursor: pointer;
     font-weight: 500;
     color: #050505;
+    font-size: 14px;
 }
 
 .shared-photos {
@@ -222,4 +266,46 @@
     height: 80px;
     object-fit: cover;
     border-radius: 4px;
+}
+
+.no-chat-selected {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #65676b;
+    text-align: center;
+}
+
+.notification-badge {
+    background-color: #ff3b30;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+    box-shadow: 0 2px 4px rgba(255, 59, 48, 0.4);
+}
+
+/* Chữ hiển thị "New message" */
+.unread-text {
+    color: #0084ff !important;
+    font-weight: 600;
+}
+
+.online-dot-avatar {
+    width: 12px;
+    height: 12px;
+    background-color: #31a24c;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 2px;
+    right: 15px;
+    border: 2px solid white;
 }

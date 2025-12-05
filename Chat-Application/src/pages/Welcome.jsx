@@ -4,12 +4,13 @@ import "./Welcome.css";
 import { useState } from "react";
 import iconLogo from "../assets/icon.png"
 import { useNavigate } from "react-router-dom"
+import axios from "axios";
 
 const Welcome = () => {
     const [showPassword, setShowPassword] = useState(false);
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false); // Thêm trạng thái loading
 
     const navigate = useNavigate();
 
@@ -17,28 +18,37 @@ const Welcome = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-
-        const storedUser = JSON.parse(localStorage.getItem("registeredUser"));
-
-        const isMockAdmin = email === "admin@gmail.com" && password === "123456";
-        const isRegisteredUser = storedUser && email === storedUser.email && password === storedUser.password;
-
 
         if (!email || !password) {
             alert("Please fill all fields!");
             return;
         }
 
-        if (isMockAdmin || isRegisteredUser) {
-        // Lưu cờ đánh dấu đã đăng nhập
-            localStorage.setItem("isLoggedIn", "true"); 
-        
+        try {
+            setLoading(true);
+            
+            const res = await axios.post("http://localhost:3001/api/login", {
+                email: email,
+                password: password
+            });
+
+            localStorage.setItem("user", JSON.stringify(res.data)); 
+            
+            // 3. Chuyển hướng
             alert("Login successful!");
             navigate("/main-board");
-        } else {
-            alert("Incorrect email or password!");
+        } catch (error) {
+            console.error();
+
+            if (err.response && err.response.data) {
+                alert(err.response.data.message); 
+            } else {
+                alert("Login failed! Please check server connection.");
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -89,8 +99,8 @@ const Welcome = () => {
                         </button>
                     </div>
 
-                    <button type="submit" className="btn-primary btn-login">
-                        Log In
+                    <button type="submit" className="btn-primary btn-login" disabled={loading}>
+                        {loading ? "Logging in..." : "Log In"}
                     </button>
                 </form>
 
