@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
+const Message = require('./models/Message');
 
 const app = express();
 app.use(cors());
@@ -16,8 +17,8 @@ const io = new Server(server, {
 });
 
 mongoose.connect('mongodb://127.0.0.1:27017/z-chat')
-  .then(() => console.log('MongoDB Connected Successfully'))
-  .catch(err => console.error('MongoDB Connection Error:', err));
+    .then(() => console.log('MongoDB Connected Successfully'))
+    .catch(err => console.error('MongoDB Connection Error:', err));
 
 // Register
 app.post('/api/register', async (req, res) => {
@@ -97,6 +98,83 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
+
+// Gửi tin nhắn
+app.post("/api/messages", async (req, res) => {
+    const newMessage = new Message(req.body);
+    try {
+        const savedMessage = await newMessage.save();
+        res.status(200).json(savedMessage);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+// Lấy tin nhắn giữa 2 người
+app.get("/api/messages/:userId1/:userId2", async (req, res) => {
+    try {
+        const { userId1, userId2 } = req.params;
+
+        const messages = await Message.find({
+            $or: [
+                { senderId: userId1, receiverId: userId2 },
+                { senderId: userId2, receiverId: userId1 },
+            ],
+        }).sort({ createdAt: 1 });
+
+        res.status(200).json(messages);
+    } catch (error) {
+        res.status(500).json(err);
+    }
+})
+
+// Lấy danh sách những người đã từng nhắn tin với userId
+app.get("/api/conversations/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Sắp xếp giảm dần theo thời gian để lấy những người nhắn gần đây nhất
+        const messages = await Message.find({
+            $or: [ { senderId: userId }, { receiverId: userId } ]
+        }).sort({ createdAt: -1 });
+
+        const partnerIds = [];
+        const seen = new Set();
+
+        messages.forEach(msg => {
+            const partnerId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+            if (!seen.has(partnerId)) {
+                seen.add(partnerId);
+                partnerIds.push(partnerId);
+            }
+        });
+
+        const conversationList = await Promise.all(partnerIds.map(async (partnerId) => {
+            const user = await User.findById(partnerId).select("-password");
+            
+            // Tìm tin nhắn mới nhất giữa mình và người này
+            const lastMsg = await Message.findOne({
+                $or: [
+                    { senderId: userId, receiverId: partnerId },
+                    { senderId: partnerId, receiverId: userId }
+                ]
+            }).sort({ createdAt: -1 });
+
+            // Trả về object User kèm thêm trường lastMessageText
+            return {
+                ...user._doc,
+                lastMessageText: lastMsg ? lastMsg.text : "",
+                lastMessageTime: lastMsg ? lastMsg.createdAt : ""
+            };
+        }));
+
+        res.status(200).json(conversationList);
+    } catch (error) {
+        console.error(err);
+        res.status(500).json(err);
+    }
+})
+
 // SOCKET.IO
 let onlineUsers = [];
 
@@ -111,12 +189,13 @@ io.on('connection', (socket) => {
         io.emit('getOnlineUsers', onlineUsers);
     });
 
-    socket.on('sendMessage', ({ senderId, receiverId, text }) => {
+    socket.on('sendMessage', ({ senderId, receiverId, text, replyTo }) => {
         const user = onlineUsers.find(u => u.userId === receiverId);
         if (user) {
             io.to(user.socketId).emit('getMessage', {
                 senderId,
                 text,
+                replyTo,
                 createdAt: new Date().toISOString(),
             });
         }
