@@ -6,6 +6,31 @@ const cors = require('cors');
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
 const Message = require('./models/Message');
+const dotenv = require('dotenv');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { type } = require('os');
+
+dotenv.config();
+
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_KEY,
+    api_secret: process.env.CLOUDINARY_SECRET
+});
+
+// Multer and Cloudinary storage setup
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'z-chat',
+        resource_type: 'auto',
+    }
+});
+
+const upload = multer({ storage: storage });
 
 const app = express();
 app.use(cors());
@@ -135,7 +160,7 @@ app.get("/api/conversations/:userId", async (req, res) => {
 
         // Sắp xếp giảm dần theo thời gian để lấy những người nhắn gần đây nhất
         const messages = await Message.find({
-            $or: [ { senderId: userId }, { receiverId: userId } ]
+            $or: [{ senderId: userId }, { receiverId: userId }]
         }).sort({ createdAt: -1 });
 
         const partnerIds = [];
@@ -151,7 +176,7 @@ app.get("/api/conversations/:userId", async (req, res) => {
 
         const conversationList = await Promise.all(partnerIds.map(async (partnerId) => {
             const user = await User.findById(partnerId).select("-password");
-            
+
             // Tìm tin nhắn mới nhất giữa mình và người này
             const lastMsg = await Message.findOne({
                 $or: [
@@ -175,6 +200,22 @@ app.get("/api/conversations/:userId", async (req, res) => {
     }
 })
 
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+        res.status(200).json({ 
+            fileUrl: req.file.path, 
+            fileName: req.file.originalname,
+            mimetype: req.file.mimetype // client dùng cái này để biết là 'image' hay 'file'
+        });
+    } catch (error) {
+        console.error(err);
+        res.status(500).json({ message: "Upload failed" });
+    }
+});
+
 // SOCKET.IO
 let onlineUsers = [];
 
@@ -189,14 +230,27 @@ io.on('connection', (socket) => {
         io.emit('getOnlineUsers', onlineUsers);
     });
 
-    socket.on('sendMessage', ({ senderId, receiverId, text, replyTo }) => {
+    socket.on('sendMessage', ({ senderId, receiverId, text, replyTo, type, fileUrl, fileName }) => {
         const user = onlineUsers.find(u => u.userId === receiverId);
+
+        const messageData = {
+            senderId,
+            text: text || "",
+            type: type || "text",
+            fileUrl: fileUrl || "",
+            fileName: fileName || "",
+            replyTo,
+            createdAt: new Date().toISOString(),
+        };
+
         if (user) {
-            io.to(user.socketId).emit('getMessage', {
-                senderId,
-                text,
-                replyTo,
-                createdAt: new Date().toISOString(),
+            io.to(user.socketId).emit('getMessage', messageData);
+
+            io.to(user.socketId).emit('getNotification', {
+                senderId: senderId,
+                text: type === 'image' ? 'Sent an image' : (type === 'file' ? 'Sent a file' : text),
+                isRead: false,
+                date: new Date()
             });
         }
     });

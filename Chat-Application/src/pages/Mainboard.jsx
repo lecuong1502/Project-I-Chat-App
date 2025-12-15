@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import './Mainboard.css'; // Link file CSS
+import { FaFile, FaTimes } from 'react-icons/fa';
 import { FaSearch, FaPhoneAlt, FaVideo, FaInfoCircle, FaImage, FaPaperPlane } from 'react-icons/fa';
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
@@ -23,6 +24,9 @@ const Mainboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [replyingTo, setReplyingTo] = useState(null); // Lưu tin nhắn đang muốn reply
     const [showOptionId, setShowOptionId] = useState(null);
+
+    const fileInputRef = useRef();
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const sharedImages = [
         "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=100&q=60",
@@ -51,7 +55,9 @@ const Mainboard = () => {
                     text: data.text,
                     replyTo: data.replyTo,
                     createdAt: Date.now(),
-                    type: 'text'
+                    type: data.type,
+                    fileUrl: data.fileUrl,
+                    fileName: data.fileName
                 });
             });
         } catch (error) {
@@ -172,51 +178,114 @@ const Mainboard = () => {
         }
     };
 
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Giới hạn dung lượng (ví dụ 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File is too large! Max 5MB.");
+                return;
+            }
+            setSelectedFile(file);
+        }
+    };
+
+    const clearSelectedFile = () => {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = null;
+        }
+    };
+
     // Gửi tin nhắn
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !activeChat || !currentUser) return;
+        if (!newMessage.trim() && !selectedFile || !activeChat || !currentUser) return;
 
-        const messageText = newMessage;
+        let messageData = {
+            senderId: currentUser._id,
+            receiverId: activeChat._id,
+            text: newMessage,
+            type: 'text',
+            fileUrl: '',
+            fileName: ''
+        };
 
+        // A. NẾU CÓ FILE -> UPLOAD LÊN SERVER TRƯỚC
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            try {
+                const uploadRes = await axios.post("http://localhost:3001/api/upload", formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                });
+
+                // Lấy thông tin từ server trả về
+                messageData.fileUrl = uploadRes.data.fileUrl;
+                messageData.fileName = uploadRes.data.fileName;
+
+                const serverMimeType = uploadRes.data.mimeType || "";
+
+                // Xác định loại tin nhắn dựa trên mimeType server trả về
+                if (serverMimeType.startsWith("image/")) {
+                    messageData.type = "image";
+                } else {
+                    messageData.type = "file";
+                }
+            } catch (err) {
+                console.error("Upload failed:", err);
+                alert("Failed to upload file.");
+                return;
+            }
+        }
+
+        // B. XỬ LÝ REPLY (NẾU CÓ)
         const replyData = replyingTo ? {
             id: replyingTo._id,
-            text: replyingTo.text,
+            text: replyingTo.type === 'text' ? replyingTo.text : `[${replyingTo.type}]`, // Hiển thị text thay thế nếu reply ảnh
             senderId: replyingTo.sender
         } : null;
 
-        const msgData = {
-            senderId: currentUser._id.toString(),
-            receiverId: activeChat._id.toString(),
-            text: messageText
-        };
+        // C. BẮN SOCKET
+        socket.current.emit("sendMessage", {
+            ...messageData,
+            replyTo: replyData
+        });
 
-        socket.current.emit("sendMessage", msgData);
-
+        // D. LƯU VÀO DB
         try {
-            const res = await axios.post("http://localhost:3001/api/messages", {
-                senderId: currentUser._id,
-                receiverId: activeChat._id,
-                text: messageText,
+            await axios.post("http://localhost:3001/api/messages", {
+                ...messageData,
                 replyTo: replyData
             });
 
-            // Cập nhật giao diện ngay lập tức
+            // Cập nhật UI ngay lập tức
             setMessages([...messages, {
                 sender: currentUser._id,
-                text: messageText,
+                text: messageData.text,
+                type: messageData.type,         // Quan trọng
+                fileUrl: messageData.fileUrl,   // Quan trọng
+                fileName: messageData.fileName, // Quan trọng
                 replyTo: replyData,
                 createdAt: Date.now()
             }]);
 
+            // Cập nhật last message ở Sidebar
             setConversations(prev => prev.map(conv => {
                 if (conv._id === activeChat._id) {
-                    return { ...conv, lastMessageText: messageText };
+                    let previewText = messageData.text;
+                    if (messageData.type === 'image') previewText = 'Sent an image';
+                    if (messageData.type === 'file') previewText = 'Sent a file';
+                    return { ...conv, lastMessageText: previewText };
                 }
                 return conv;
             }));
 
-            setNewMessage(""); // Xóa ô nhập liệu
+            // Reset state
+            setNewMessage("");
             setReplyingTo(null);
+            clearSelectedFile(); // Xóa file sau khi gửi xong
+
         } catch (err) {
             console.error("Lỗi gửi tin nhắn:", err);
         }
@@ -372,7 +441,34 @@ const Mainboard = () => {
                                                 )}
 
                                                 {/* Nội dung tin nhắn chính */}
-                                                <p>{msg.text}</p>
+                                                {/* TRƯỜNG HỢP 1: LÀ ẢNH */}
+                                                {msg.type === 'image' ? (
+                                                    <div className="msg-image-container">
+                                                        <img
+                                                            src={msg.fileUrl}
+                                                            alt="sent-img"
+                                                            style={{ maxWidth: '200px', borderRadius: '10px', cursor: 'pointer' }}
+                                                            onClick={() => window.open(msg.fileUrl, '_blank')} // Click để xem ảnh to
+                                                        />
+                                                        {/* Vẫn hiện text nếu người dùng có gõ kèm caption */}
+                                                        {msg.text && <p style={{ marginTop: 5 }}>{msg.text}</p>}
+                                                    </div>
+                                                )
+                                                    /* TRƯỜNG HỢP 2: LÀ FILE TÀI LIỆU */
+                                                    : msg.type === 'file' ? (
+                                                        <div className="msg-file-container" style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,0,0,0.05)', padding: 10, borderRadius: 8 }}>
+                                                            <FaFile size={24} color="#555" />
+                                                            <div>
+                                                                <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', fontWeight: 'bold', color: '#333' }}>
+                                                                    {msg.fileName || "Download File"}
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                        /* TRƯỜNG HỢP 3: TEXT THƯỜNG */
+                                                        : (
+                                                            <p>{msg.text}</p>
+                                                        )}
                                             </div>
 
                                         </div>
@@ -395,9 +491,29 @@ const Mainboard = () => {
                                 </div>
                             )}
 
+                            {selectedFile && (
+                                <div className="file-preview-bar" style={{ padding: '5px 15px', background: '#f0f2f5', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: 13, color: '#0084ff' }}>
+                                        Selected: <b>{selectedFile.name}</b>
+                                    </span>
+                                    <FaTimes style={{ cursor: 'pointer' }} onClick={clearSelectedFile} />
+                                </div>
+                            )}
+
                             {/* Input cũ */}
                             <div className="chat-footer">
-                                <FaImage size={20} color="#0084ff" style={{ cursor: 'pointer' }} />
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    style={{ display: 'none' }}
+                                    onChange={handleFileSelect}
+                                />
+                                <FaImage
+                                    size={20}
+                                    color="#0084ff"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => fileInputRef.current.click()}
+                                />
                                 <input
                                     type="text"
                                     placeholder="Type a message..."
